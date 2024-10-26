@@ -377,7 +377,7 @@ def output(emojis, version_targets: list[str]):
     emojis_sorted = sorted(emojis, key=lambda emoji: emoji.order)
     for maximum_version in version_targets:
         # ジャンルごとにソートし、genre\temojis,の形式で出力する
-        with open(f"{parent_dir}/generated/emoji_genre_{maximum_version}.txt", "w") as f:
+        with open(f"{parent_dir}/EmojiDictionary/emoji_genre_{maximum_version}.txt", "w") as f:
             lines = [genre + "\t" +
                      ",".join([
                          emoji.codepoints
@@ -388,8 +388,8 @@ def output(emojis, version_targets: list[str]):
                      ]
             f.write("\n".join(lines))
 
-        # tsvにして./generated/emoji_all.tsv.genを出力する
-        with open(f"{parent_dir}/generated/emoji_all_{maximum_version}.txt", "w") as f:
+        # tsvにして./EmojiDictionary/emoji_all.tsv.genを出力する
+        with open(f"{parent_dir}/EmojiDictionary/emoji_all_{maximum_version}.txt", "w") as f:
             # emojiの各行をtsvの行にする
             lines = []
             for emoji in emojis_sorted:
@@ -403,8 +403,8 @@ def output(emojis, version_targets: list[str]):
             # tsvの行を出力する
             f.write("\n".join(lines))
 
-        # 辞書ファイル向けに./generated/emoji_dict.tsv.genを出力する
-        with open(f"{parent_dir}/generated/emoji_dict_{maximum_version}.txt", "w") as f:
+        # 辞書ファイル向けに./EmojiDictionary/emoji_dict.tsv.genを出力する
+        with open(f"{parent_dir}/EmojiDictionary/emoji_dict_{maximum_version}.txt", "w") as f:
             # format例: アーティスト	👨‍🎤	5	5	501	-20
             lines = []
             for emoji in emojis_sorted:
@@ -433,9 +433,9 @@ if __name__ == "__main__":
     # Emojiのデータを格納するリスト
     emojis = []
     # setup
-    # mkdir generated
-    if not os.path.exists(f"{parent_dir}/generated"):
-        os.makedirs(f"{parent_dir}/generated")
+    # mkdir EmojiDictionary
+    if not os.path.exists(f"{parent_dir}/EmojiDictionary"):
+        os.makedirs(f"{parent_dir}/EmojiDictionary")
 
     load_emoji_data(emojis)
     apply_emoji_sequence(emojis)
