@@ -52,6 +52,10 @@ def load_emoji_data(emojis):
             # コメント行は読み飛ばす
             if line.startswith('#'):
                 continue
+            # Emoji 16.0対応のコミット（faf76adc290fc9241b07c501a8224e7a1a6d00fb）以降、CLDRデータのエラーのためにバーが全角になっていて処理が間違っていることがある。
+            # 応急処置として、半角スペースに変換する
+            if "｜" in line:
+                line = line.replace("｜", " ")
             # データをタブで分割する
             data = line.strip().split('\t')
             # データの数が7個でなければエラー
@@ -247,7 +251,7 @@ def apply_emoji_zwj_sequences(emoji):
                 print(data, base_codepoints)
 
 
-def apply_cldr_data(emojis, file_name):
+def apply_cldr_data(emojis: list[Emoji], file_name: str):
     # ja.xmlを読み込んで絵文字の検索クエリを追加する
     # ja.xmlのフォーマットは、<annotation cp="emoji.codepoints" type="tts">'|'-separated queries</annotation>
     # <annotation cp="😖">困惑 | 困惑した顔 | 混乱 | 顔</annotation>
@@ -263,14 +267,19 @@ def apply_cldr_data(emojis, file_name):
             if match:
                 codepoints = match[0].split("\"")[1]
                 _queries = re.sub(r"</?annotation.*?>", "", match[0])
+                # Emoji 16.0対応のコミット（632c93a93da35653d43bc4e7b20d23ff46d19c8c）以降、バーが全角になっている場合がある。
+                # そこで、処理の前にバーを半角に変換する
+                _queries = _queries.replace("｜", "|")
                 queries |= {query.strip() for query in _queries.split("|")}
             match = re.findall(
                 r'<annotation cp=".+?">.+</annotation>', line)
             if match:
                 codepoints = match[0].split("\"")[1]
                 _queries = re.sub(r"</?annotation.*?>", "", match[0])
+                # Emoji 16.0対応のコミット（632c93a93da35653d43bc4e7b20d23ff46d19c8c）以降、バーが全角になっている場合がある。
+                # そこで、処理の前にバーを半角に変換する
+                _queries = _queries.replace("｜", "|")
                 queries |= {query.strip() for query in _queries.split("|")}
-
             if codepoints is None:
                 continue
             codepoints2 = "".join(
