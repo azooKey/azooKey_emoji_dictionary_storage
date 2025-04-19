@@ -454,4 +454,4 @@ if __name__ == "__main__":
     apply_additional_dict(emojis)
     apply_emoji_test_data(emojis)
     apply_manual_filter(emojis)
-    output(emojis, version_targets=["E13.1", "E14.0", "E15.0", "E15.1"])
+    output(emojis, version_targets=["E13.1", "E14.0", "E15.0", "E15.1", "E16.0"])

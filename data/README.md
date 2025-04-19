@@ -10,7 +10,6 @@
   * License: https://www.unicode.org/copyright.html
   * © 2022 Unicode®, Inc.
   * Usage: get skin-tone variations
-
 * `emoji-zwj-sequences.txt`
   * Original: https://unicode.org/Public/emoji/latest/emoji-zwj-sequences.txt
   * License: https://www.unicode.org/copyright.html
@@ -21,8 +20,6 @@
   * License: https://www.unicode.org/copyright.html
   * © 2022 Unicode®, Inc.
   * Usage: get genre data and ordering data
-
-
 * `ja.xml`
   * Original: https://github.com/unicode-org/cldr/blob/main/common/annotations/ja.xml
   * License: https://www.unicode.org/copyright.html
