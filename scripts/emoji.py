@@ -106,11 +106,12 @@ def apply_emoji_sequence(emojis):
             # codepointsからSkin Tone Modifierを除外する
             base_codepoints = [cp for cp in codepoints if cp not in range(
                 0x1F3FB, 0x1F3FF + 1)]
-            base_unicode_emoji = "".join([chr(cp)for cp in base_codepoints])
+            base_unicode_emoji = "".join([chr(cp) for cp in base_codepoints])
+            base_unicode_emoji_fe0f = base_unicode_emoji + chr(0xFE0F)
             # Skin Tone Modifierのついているバージョンを`variations`のフィールドに追加する
             for emoji in emojis:
-                if emoji.codepoints == base_unicode_emoji:
-                    unicode_emoji = "".join([chr(cp)for cp in codepoints])
+                if emoji.codepoints == base_unicode_emoji or emoji.codepoints == base_unicode_emoji_fe0f:
+                    unicode_emoji = "".join([chr(cp) for cp in codepoints])
                     emoji.variations.append(unicode_emoji)
                     break
             else:
@@ -374,12 +375,24 @@ def version_greater_or_equal(version1, version2):
 
 
 def output(emojis, version_targets: list[str]):
+    # ジャンルの出力順を固定する
+    genre_order = [
+        "Activities",
+        "Travel & Places",
+        "Symbols",
+        "Smileys & People",
+        "Objects",
+        "Flags",
+        "Component",
+        "Food & Drink",
+        "Animals & Nature",
+    ]
+
     # ジャンルごとにソートする
-    emojis_genre_sorted = defaultdict(list)
-    for genre in set([emoji.genre for emoji in emojis]):
-        for emoji in emojis:
-            if emoji.genre == genre:
-                emojis_genre_sorted[genre].append(emoji)
+    emojis_genre_sorted = {genre: [] for genre in genre_order}
+    for emoji in emojis:
+        emojis_genre_sorted.setdefault(emoji.genre, []).append(emoji)
+    for genre in emojis_genre_sorted:
         emojis_genre_sorted[genre] = sorted(
             emojis_genre_sorted[genre], key=lambda emoji: emoji.order)
 
@@ -387,14 +400,19 @@ def output(emojis, version_targets: list[str]):
     for maximum_version in version_targets:
         # ジャンルごとにソートし、genre\temojis,の形式で出力する
         with open(f"{parent_dir}/EmojiDictionary/emoji_genre_{maximum_version}.txt", "w") as f:
-            lines = [genre + "\t" +
-                     ",".join([
-                         emoji.codepoints
-                         for emoji in emojis
-                         if version_greater_or_equal(emoji.version, maximum_version)
-                     ])
-                     for genre, emojis in emojis_genre_sorted.items()
-                     ]
+            lines = []
+            for genre in genre_order:
+                lines.append(
+                    genre
+                    + "\t"
+                    + ",".join(
+                        [
+                            emoji.codepoints
+                            for emoji in emojis_genre_sorted.get(genre, [])
+                            if version_greater_or_equal(emoji.version, maximum_version)
+                        ]
+                    )
+                )
             f.write("\n".join(lines))
 
         # tsvにして./EmojiDictionary/emoji_all.tsv.genを出力する
