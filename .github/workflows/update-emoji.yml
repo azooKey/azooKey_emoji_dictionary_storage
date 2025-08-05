@@ -22,7 +22,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           branch: chore/update-emoji-dictionary
-          commit-message: chore: update emoji dictionary
+          commit-message: "chore: update emoji dictionary"
           title: "chore: update emoji dictionary"
           body: |
             Auto-generated PR to update emoji dictionary.
