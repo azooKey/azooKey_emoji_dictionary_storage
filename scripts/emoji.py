@@ -233,16 +233,30 @@ def apply_emoji_zwj_sequences(emoji):
             # handshake: 1F91C, pattern: 1FAF1 _ 200D 1FAF2 _
             elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1FAF1, -1, 0x200D, 0x1FAF2, -1]):
                 base_codepoints = [0x1F91D]
+            # mixed skin tone variants added in Emoji 17.0 for bunny ears / wrestling
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F468, -1, 0x200D, 0x1F430, 0x200D, 0x1F468, -1]):
+                base_codepoints = [0x1F46F, 0x200D, 0x2642, 0xFE0F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F469, -1, 0x200D, 0x1F430, 0x200D, 0x1F469, -1]):
+                base_codepoints = [0x1F46F, 0x200D, 0x2640, 0xFE0F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F9D1, -1, 0x200D, 0x1F430, 0x200D, 0x1F9D1, -1]):
+                base_codepoints = [0x1F46F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F468, -1, 0x200D, 0x1FAEF, 0x200D, 0x1F468, -1]):
+                base_codepoints = [0x1F93C, 0x200D, 0x2642, 0xFE0F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F469, -1, 0x200D, 0x1FAEF, 0x200D, 0x1F469, -1]):
+                base_codepoints = [0x1F93C, 0x200D, 0x2640, 0xFE0F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F9D1, -1, 0x200D, 0x1FAEF, 0x200D, 0x1F9D1, -1]):
+                base_codepoints = [0x1F93C]
             else:
                 # codepointsからSkin Tone Modifierを除外する
                 base_codepoints = [cp for cp in codepoints if cp not in range(
                     0x1F3FB, 0x1F3FF + 1) and cp != 0xFE0F]
             base_unicode_emoji = "".join([chr(cp)for cp in base_codepoints])
+            normalized_base_unicode_emoji = base_unicode_emoji.replace(chr(0xFE0F), "")
             # print(base_codepoints)
             # print(base_unicode_emoji)
             # Skin Tone Modifierのついているバージョンを`variations`のフィールドに追加する
             for emoji in emojis:
-                if emoji.codepoints == base_unicode_emoji:
+                if emoji.codepoints.replace(chr(0xFE0F), "") == normalized_base_unicode_emoji:
                     unicode_emoji = "".join([chr(cp)for cp in codepoints])
                     emoji.variations.append(unicode_emoji)
                     # print(emoji)
@@ -472,4 +486,4 @@ if __name__ == "__main__":
     apply_additional_dict(emojis)
     apply_emoji_test_data(emojis)
     apply_manual_filter(emojis)
-    output(emojis, version_targets=["E13.1", "E14.0", "E15.0", "E15.1", "E16.0"])
+    output(emojis, version_targets=["E13.1", "E14.0", "E15.0", "E15.1", "E16.0", "E17.0"])
