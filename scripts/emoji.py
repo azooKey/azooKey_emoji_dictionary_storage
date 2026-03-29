@@ -43,6 +43,15 @@ Emoji = namedtuple(
     'Emoji', ["genre", "codepoints", "variations", "keywords", "version", "order"])
 
 
+LEGACY_FAMILY_EMOJIS = {
+    "👨‍👦", "👨‍👦‍👦", "👨‍👧", "👨‍👧‍👦", "👨‍👧‍👧",
+    "👨‍👨‍👦", "👨‍👨‍👦‍👦", "👨‍👨‍👧", "👨‍👨‍👧‍👦", "👨‍👨‍👧‍👧",
+    "👨‍👩‍👦", "👨‍👩‍👦‍👦", "👨‍👩‍👧", "👨‍👩‍👧‍👦", "👨‍👩‍👧‍👧",
+    "👩‍👦", "👩‍👦‍👦", "👩‍👧", "👩‍👧‍👦", "👩‍👧‍👧",
+    "👩‍👩‍👦", "👩‍👩‍👦‍👦", "👩‍👩‍👧", "👩‍👩‍👧‍👦", "👩‍👩‍👧‍👧",
+}
+
+
 def load_emoji_data(emojis):
     # genreは一旦全てNoneで初期化する
     # 基本的にはemoji_data.tsvのデータを格納し、emoji-sequences.txt、emoji-zwj-sequences.txtのデータからSkin Tone Modifierのついているバージョンを`variations`のフィールドに追加する。
@@ -388,6 +397,17 @@ def version_greater_or_equal(version1, version2):
     return float(version1[1:]) <= float(version2[1:])
 
 
+def should_include_emoji(emoji: Emoji, maximum_version: str):
+    if not version_greater_or_equal(emoji.version, maximum_version):
+        return False
+    # From Emoji 15.1 onward, keep the new silhouette-style family set and
+    # drop the legacy detailed family ZWJ sequences from generated outputs.
+    if float(maximum_version[1:]) >= 15.1:
+        if emoji.codepoints.replace(chr(0xFE0F), "") in LEGACY_FAMILY_EMOJIS:
+            return False
+    return True
+
+
 def output(emojis, version_targets: list[str]):
     # ジャンルの出力順を固定する
     genre_order = [
@@ -423,7 +443,7 @@ def output(emojis, version_targets: list[str]):
                         [
                             emoji.codepoints
                             for emoji in emojis_genre_sorted.get(genre, [])
-                            if version_greater_or_equal(emoji.version, maximum_version)
+                            if should_include_emoji(emoji, maximum_version)
                         ]
                     )
                 )
@@ -434,7 +454,7 @@ def output(emojis, version_targets: list[str]):
             # emojiの各行をtsvの行にする
             lines = []
             for emoji in emojis_sorted:
-                if version_greater_or_equal(emoji.version, maximum_version):
+                if should_include_emoji(emoji, maximum_version):
                     line = "\t".join([
                         emoji.codepoints,
                         ",".join(emoji.keywords),
@@ -449,7 +469,7 @@ def output(emojis, version_targets: list[str]):
             # format例: アーティスト	👨‍🎤	5	5	501	-20
             lines = []
             for emoji in emojis_sorted:
-                if version_greater_or_equal(emoji.version, maximum_version):
+                if should_include_emoji(emoji, maximum_version):
                     # keywordはカタカナ化して、重複を除去し、「ひらがな/英数字」に完全マッチするもののみ許す
                     keywords = [
                         jaconv.hira2kata(keyword)
