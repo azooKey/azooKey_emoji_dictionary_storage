@@ -43,6 +43,15 @@ Emoji = namedtuple(
     'Emoji', ["genre", "codepoints", "variations", "keywords", "version", "order"])
 
 
+LEGACY_FAMILY_EMOJIS = {
+    "👨‍👦", "👨‍👦‍👦", "👨‍👧", "👨‍👧‍👦", "👨‍👧‍👧",
+    "👨‍👨‍👦", "👨‍👨‍👦‍👦", "👨‍👨‍👧", "👨‍👨‍👧‍👦", "👨‍👨‍👧‍👧",
+    "👨‍👩‍👦", "👨‍👩‍👦‍👦", "👨‍👩‍👧", "👨‍👩‍👧‍👦", "👨‍👩‍👧‍👧",
+    "👩‍👦", "👩‍👦‍👦", "👩‍👧", "👩‍👧‍👦", "👩‍👧‍👧",
+    "👩‍👩‍👦", "👩‍👩‍👦‍👦", "👩‍👩‍👧", "👩‍👩‍👧‍👦", "👩‍👩‍👧‍👧",
+}
+
+
 def load_emoji_data(emojis):
     # genreは一旦全てNoneで初期化する
     # 基本的にはemoji_data.tsvのデータを格納し、emoji-sequences.txt、emoji-zwj-sequences.txtのデータからSkin Tone Modifierのついているバージョンを`variations`のフィールドに追加する。
@@ -233,16 +242,30 @@ def apply_emoji_zwj_sequences(emoji):
             # handshake: 1F91C, pattern: 1FAF1 _ 200D 1FAF2 _
             elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1FAF1, -1, 0x200D, 0x1FAF2, -1]):
                 base_codepoints = [0x1F91D]
+            # mixed skin tone variants added in Emoji 17.0 for bunny ears / wrestling
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F468, -1, 0x200D, 0x1F430, 0x200D, 0x1F468, -1]):
+                base_codepoints = [0x1F46F, 0x200D, 0x2642, 0xFE0F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F469, -1, 0x200D, 0x1F430, 0x200D, 0x1F469, -1]):
+                base_codepoints = [0x1F46F, 0x200D, 0x2640, 0xFE0F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F9D1, -1, 0x200D, 0x1F430, 0x200D, 0x1F9D1, -1]):
+                base_codepoints = [0x1F46F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F468, -1, 0x200D, 0x1FAEF, 0x200D, 0x1F468, -1]):
+                base_codepoints = [0x1F93C, 0x200D, 0x2642, 0xFE0F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F469, -1, 0x200D, 0x1FAEF, 0x200D, 0x1F469, -1]):
+                base_codepoints = [0x1F93C, 0x200D, 0x2640, 0xFE0F]
+            elif zwj_sequence_skin_tone_pattern_match(codepoints, [0x1F9D1, -1, 0x200D, 0x1FAEF, 0x200D, 0x1F9D1, -1]):
+                base_codepoints = [0x1F93C]
             else:
                 # codepointsからSkin Tone Modifierを除外する
                 base_codepoints = [cp for cp in codepoints if cp not in range(
                     0x1F3FB, 0x1F3FF + 1) and cp != 0xFE0F]
             base_unicode_emoji = "".join([chr(cp)for cp in base_codepoints])
+            normalized_base_unicode_emoji = base_unicode_emoji.replace(chr(0xFE0F), "")
             # print(base_codepoints)
             # print(base_unicode_emoji)
             # Skin Tone Modifierのついているバージョンを`variations`のフィールドに追加する
             for emoji in emojis:
-                if emoji.codepoints == base_unicode_emoji:
+                if emoji.codepoints.replace(chr(0xFE0F), "") == normalized_base_unicode_emoji:
                     unicode_emoji = "".join([chr(cp)for cp in codepoints])
                     emoji.variations.append(unicode_emoji)
                     # print(emoji)
@@ -374,6 +397,17 @@ def version_greater_or_equal(version1, version2):
     return float(version1[1:]) <= float(version2[1:])
 
 
+def should_include_emoji(emoji: Emoji, maximum_version: str):
+    if not version_greater_or_equal(emoji.version, maximum_version):
+        return False
+    # From Emoji 15.1 onward, keep the new silhouette-style family set and
+    # drop the legacy detailed family ZWJ sequences from generated outputs.
+    if float(maximum_version[1:]) >= 15.1:
+        if emoji.codepoints.replace(chr(0xFE0F), "") in LEGACY_FAMILY_EMOJIS:
+            return False
+    return True
+
+
 def output(emojis, version_targets: list[str]):
     # ジャンルの出力順を固定する
     genre_order = [
@@ -409,7 +443,7 @@ def output(emojis, version_targets: list[str]):
                         [
                             emoji.codepoints
                             for emoji in emojis_genre_sorted.get(genre, [])
-                            if version_greater_or_equal(emoji.version, maximum_version)
+                            if should_include_emoji(emoji, maximum_version)
                         ]
                     )
                 )
@@ -420,7 +454,7 @@ def output(emojis, version_targets: list[str]):
             # emojiの各行をtsvの行にする
             lines = []
             for emoji in emojis_sorted:
-                if version_greater_or_equal(emoji.version, maximum_version):
+                if should_include_emoji(emoji, maximum_version):
                     line = "\t".join([
                         emoji.codepoints,
                         ",".join(emoji.keywords),
@@ -435,7 +469,7 @@ def output(emojis, version_targets: list[str]):
             # format例: アーティスト	👨‍🎤	5	5	501	-20
             lines = []
             for emoji in emojis_sorted:
-                if version_greater_or_equal(emoji.version, maximum_version):
+                if should_include_emoji(emoji, maximum_version):
                     # keywordはカタカナ化して、重複を除去し、「ひらがな/英数字」に完全マッチするもののみ許す
                     keywords = [
                         jaconv.hira2kata(keyword)
@@ -472,4 +506,4 @@ if __name__ == "__main__":
     apply_additional_dict(emojis)
     apply_emoji_test_data(emojis)
     apply_manual_filter(emojis)
-    output(emojis, version_targets=["E13.1", "E14.0", "E15.0", "E15.1", "E16.0"])
+    output(emojis, version_targets=["E13.1", "E14.0", "E15.0", "E15.1", "E16.0", "E17.0"])
