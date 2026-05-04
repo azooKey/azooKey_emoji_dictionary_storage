@@ -34,3 +34,7 @@
   * azooKeyが独自に用意したもの
   * License: MIT License (azooKeyのソースコードと同様)
   * Usage: Manual emoji data
+* `emoji_surface_aliases.tsv`
+  * azooKeyが独自に用意したもの
+  * License: MIT License (azooKeyのソースコードと同様)
+  * Usage: Output additional surface forms for existing emoji entries

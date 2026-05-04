@@ -393,6 +393,31 @@ def apply_manual_filter(emojis):
             continue
 
 
+def load_surface_aliases():
+    aliases = {}
+    with open(f"{parent_dir}/data/emoji_surface_aliases.tsv", "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            normalized_emoji, surface_aliases = line.split("\t")
+            aliases[normalized_emoji] = surface_aliases.split(",")
+    return aliases
+
+
+def surface_aliases_for(emoji: Emoji, surface_aliases: dict[str, list[str]]) -> list[str]:
+    normalized_codepoints = emoji.codepoints.replace(chr(0xFE0F), "")
+    return surface_aliases.get(normalized_codepoints, [])
+
+
+def unique(items: list[str]) -> list[str]:
+    result = []
+    for item in items:
+        if item not in result:
+            result.append(item)
+    return result
+
+
 def version_greater_or_equal(version1, version2):
     return float(version1[1:]) <= float(version2[1:])
 
@@ -408,7 +433,7 @@ def should_include_emoji(emoji: Emoji, maximum_version: str):
     return True
 
 
-def output(emojis, version_targets: list[str]):
+def output(emojis, version_targets: list[str], surface_aliases: dict[str, list[str]]):
     # ジャンルの出力順を固定する
     genre_order = [
         "Activities",
@@ -455,10 +480,11 @@ def output(emojis, version_targets: list[str]):
             lines = []
             for emoji in emojis_sorted:
                 if should_include_emoji(emoji, maximum_version):
+                    variations = unique(emoji.variations + surface_aliases_for(emoji, surface_aliases))
                     line = "\t".join([
                         emoji.codepoints,
                         ",".join(emoji.keywords),
-                        ",".join(emoji.variations)
+                        ",".join(variations)
                     ])
                     lines.append(line)
             # tsvの行を出力する
@@ -476,16 +502,17 @@ def output(emojis, version_targets: list[str]):
                         for keyword in emoji.keywords
                         if re.fullmatch(r"[\u3040-\u309Fー・a-zA-Z0-9]+", keyword)
                     ]
-                    for keyword in keywords:
-                        line = "\t".join([
-                            keyword,
-                            emoji.codepoints,
-                            "5",
-                            "5",
-                            "501",
-                            "-20"
-                        ])
-                        lines.append(line)
+                    for surface in unique([emoji.codepoints] + surface_aliases_for(emoji, surface_aliases)):
+                        for keyword in keywords:
+                            line = "\t".join([
+                                keyword,
+                                surface,
+                                "5",
+                                "5",
+                                "501",
+                                "-20"
+                            ])
+                            lines.append(line)
             f.write("\n".join(lines))
     print("Successfuly generated emoji data files")
 
@@ -506,4 +533,8 @@ if __name__ == "__main__":
     apply_additional_dict(emojis)
     apply_emoji_test_data(emojis)
     apply_manual_filter(emojis)
-    output(emojis, version_targets=["E13.1", "E14.0", "E15.0", "E15.1", "E16.0", "E17.0"])
+    output(
+        emojis,
+        version_targets=["E13.1", "E14.0", "E15.0", "E15.1", "E16.0", "E17.0"],
+        surface_aliases=load_surface_aliases(),
+    )

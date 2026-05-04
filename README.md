@@ -66,3 +66,7 @@ diff './EmojiDictionary/emoji_all_E15.1.txt' './EmojiDictionary/emoji_all_E16.0.
 > 🫟️     しぶき,すぷらっしゅ,とびちったぺんき,とびちり,ぺんき,飛び散ったぺんき,飛び散り,飛沫
 ```
 7. 必要に応じてバグを修正/読みなどを追加
+
+## 表層違いの追加
+
+正規化済みの絵文字とは別に、入力フォームなどで来る表層を辞書にも出したい場合は `data/emoji_surface_aliases.tsv` に追加します。
