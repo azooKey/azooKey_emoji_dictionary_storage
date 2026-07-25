@@ -143,7 +143,7 @@ def zwj_sequence_skin_tone_pattern_match(codepoints, pattern):
     return True
 
 
-def apply_emoji_zwj_sequences(emoji):
+def apply_emoji_zwj_sequences(emojis):
     # emoji-zwj-sequences.txtを読み込み、Skin Tone Modifierのついているバージョンを`variations`のフィールドに追加する
     with open(f'{parent_dir}/data/emoji-zwj-sequences.txt', 'r') as f:
         for line in f:
@@ -320,7 +320,7 @@ def apply_cldr_data(emojis: list[Emoji], file_name: str):
 
 def apply_emoji_test_data(emojis):
     # emoji-test.txtを読み込んでジャンルの情報を追加する
-    # emoji-test.txtのフォーマットは、genre_name\temoji_list(comma-separated)
+    # emoji-test.txtのfully-qualifiedなコードポイント列を、辞書の表層形として採用する
     with open(f"{parent_dir}/data/emoji-test.txt", "r") as f:
         current_group = ""
         count = 0
@@ -338,18 +338,22 @@ def apply_emoji_test_data(emojis):
             elif line.startswith("#"):
                 continue
             count += 1
+            qualification = line.split(";")[1].strip().split()[0]
+            # minimally-qualified/unqualifiedは検索用の照合にのみ使われる表現であり、
+            # 辞書の表層形には採用しない。絵文字部品にはfully-qualifiedがなく、
+            # componentがその標準形なので併せて採用する。
+            if qualification not in ["fully-qualified", "component"]:
+                continue
             codepoints = [int(cp, 16)
                           for cp in line.split(";")[0].strip().split(" ")]
-            unicode_emoji1 = "".join([chr(cp)for cp in codepoints] + [chr(0xFE0F)])
-            unicode_emoji2 = "".join([chr(cp)for cp in codepoints])
-            unicode_emoji3 = "".join([chr(cp)
-                                     for cp in codepoints if cp != 0xFE0F])
+            unicode_emoji = "".join([chr(cp) for cp in codepoints])
+            normalized_unicode_emoji = unicode_emoji.replace(chr(0xFE0F), "")
             for i in range(len(emojis)):
-                if emojis[i].codepoints in [unicode_emoji1, unicode_emoji2, unicode_emoji3]:
+                if emojis[i].codepoints.replace(chr(0xFE0F), "") == normalized_unicode_emoji:
                     # namedtupleのフィールドを変更するには、_replaceを使う
                     emojis[i] = emojis[i]._replace(genre=current_group)
                     emojis[i] = emojis[i]._replace(order=count)
-                    emojis[i] = emojis[i]._replace(codepoints=unicode_emoji1)
+                    emojis[i] = emojis[i]._replace(codepoints=unicode_emoji)
             # print(genre, emoji_list)
 
 
