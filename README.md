@@ -16,6 +16,12 @@ pip install -r requirements.txt
 python3 scripts/emoji.py
 ```
 
+## テスト
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
 ## 新しいUnicodeバージョンへの対応作業
 
 1. 現状のコードのまま実行し、動作確認
